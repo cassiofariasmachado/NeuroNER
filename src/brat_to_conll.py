@@ -76,29 +76,44 @@ def get_entities_from_brat(text_filepath, annotation_filepath, verbose=False):
     entities = []
     with codecs.open(annotation_filepath, 'r', 'UTF-8') as f:
         for line in f.read().splitlines():
-            anno = line.split()
-            id_anno = anno[0]
+            anno = line.split('\t')
+
+            id_annotation = anno[0]
+
             # parse entity
-            if id_anno[0] == 'T':
+            if id_annotation[0] == 'T':
+                type_and_interval_annotation = anno[1].split()
+
                 entity = {}
-                entity['id'] = id_anno
-                entity['type'] = anno[1]
-                entity['start'] = int(anno[2])
-                entity['end'] = int(anno[3])
-                entity['text'] = ' '.join(anno[4:])
+                entity['id'] = id_annotation
+                entity['type'] = type_and_interval_annotation[0]
+                entity['start'] = int(type_and_interval_annotation[1])
+                entity['end'] = int(type_and_interval_annotation[-1])
+                entity['text'] = anno[2]
+
                 if verbose:
                     print("entity: {0}".format(entity))
+
                 # Check compatibility between brat text and anootation
-                if utils_nlp.replace_unicode_whitespaces_with_ascii_whitespace(text[entity['start']:entity['end']]) != \
-                    utils_nlp.replace_unicode_whitespaces_with_ascii_whitespace(entity['text']):
+                if is_annotation_and_brat_text_equals(entity, text):
                     print("Warning: brat text and annotation do not match.")
                     print("\ttext: {0}".format(text[entity['start']:entity['end']]))
-                    print("\tanno: {0}".format(entity['text']))
+                    print("\tannotation: {0}".format(entity['text']))
+                
                 # add to entitys data
                 entities.append(entity)
+
     if verbose: print("\n\n")
-    
+
     return text, entities
+
+def is_annotation_and_brat_text_equals(annotation, text):
+    start = annotation['start']
+    end = annotation['end']
+    annotation_text = annotation['text']
+
+    return utils_nlp.replace_unicode_whitespaces_with_ascii_whitespace(text[start:end]) != \
+        utils_nlp.replace_unicode_whitespaces_with_ascii_whitespace(annotation_text)
 
 def check_brat_annotation_and_text_compatibility(brat_folder):
     '''
